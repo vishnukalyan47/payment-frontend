@@ -2,11 +2,15 @@ import React, { useEffect, useRef, useState } from 'react'
 import '../styles/MakeTransaction.css'
 import { Link } from 'react-router-dom'
 import axios from 'axios';
+import Button from 'react-bootstrap/Button';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+
 
 function MakeTransaction() {
 //
 
-    const [date, setdate] = useState()
     
       const [name, setname] = useState()
     const [accNo, setaccNo] = useState()
@@ -17,24 +21,29 @@ function MakeTransaction() {
     const [institution, setinstitution] = useState()
     const [holdername, setholdername] = useState()
     const [holderNo, setholderNo] = useState()
-    const [transfertypeVal, settransfertypeVal] = useState("TransferTypes")
-    const [messagecodes, setmessagecodes] = useState("Message Codes")
+    const [transfertypeVal, settransfertypeVal] = useState("transfer type")
+    const [messagecodes, setmessagecodes] = useState("message codes")
     const [amount, setamount] = useState()
     const [transferfee, settransferfee] = useState()
-    const [disablebutton, setdisablebutton] = useState(true)
+
+    const EnterCorrectId = () => toast("Enter correct Account Number");
 
 const senderDetails = () =>{
-    if(accNo.length != 14) return;
+    if(accNo.length != 14) return  toast("Minimum length required");
     axios.post("http://localhost:8080/customers/detailsofcustomer", {
         customerid:accNo
     })
     .then(res=>{
+        console.log(res)
         res = res.data; //just for working only with the data..
         setname(res.accountholdername);
         setclearBal(res.clearbalance);
       (res.overdraftflag === 0) ? setoverdraft(false) : setoverdraft(true);
     })
-    .catch(e=> console.log(e))
+    .catch(e=> {
+        console.log(e.response.data)
+        return EnterCorrectId();
+    })
 }
 
 
@@ -47,7 +56,9 @@ bic:bic
 res = res.data;
 setinstitution(res.bankname);
 })
-.catch(e=> console.log(e))
+.catch(e=> {
+    return toast("Enter a valid BIC");
+})
 }
 
 
@@ -58,6 +69,19 @@ setinstitution(res.bankname);
     }
 
     const submitHandler = () =>{
+
+        if(accNo===undefined || accNo.length!=14) {
+            return EnterCorrectId();
+        }
+        if(!institution) return toast("Enter Bank Details");
+        if(!holdername) return toast("Enter receiver's name");
+        if(!holderNo) return toast("Enter receiver's account number");
+        if(messagecodes==="message codes")  return toast("Select a message code");
+        if(transfertypeVal==="transfer type") return toast("Select a transfer type");
+        if(!amount) return toast("Amount should be greater than 0")
+       
+
+
         const data = {
             "customer":{
                 customerid:accNo
@@ -78,9 +102,11 @@ setinstitution(res.bankname);
         }
         axios.post("http://localhost:8080/transaction/savedata",data)
         .then(res=>{
-            console.log(res.data);
+            return toast("SUCCESS");
         })
-        .catch(err=>console.log(err))
+        .catch(err=>{
+        return toast("FAILED");
+        })
     }
  
  
@@ -90,12 +116,6 @@ setinstitution(res.bankname);
             <Link to="/home" style={{textDecoration:"none"}}><h4>Back</h4></Link>
 
             <div>
-                {/* <div>
-                <label >Date</label>
-                    <input type="date" value={date} 
-                    onChange={e=>setdate(e.target.value)}
-                     />
-                </div> */}
                 <div >Sender's Details</div>
                 <div >
                     <label >Account No</label>
@@ -107,15 +127,6 @@ setinstitution(res.bankname);
                     <input type="text" value={name} />
                     <label >Clear Balance</label>
                     <input value={clearBal}/>
-                    {/* <div className="dropdown">
-                        <button className="dropbtn">{currency}</button>
-                            <div className="dropdown-content">
-                                <button onClick={e=>setcurrency("USD")}>USD</button>
-                                <button onClick={e=>setcurrency("EUR")}>EUR</button>
-                                <button onClick={e=>setcurrency("GBP")}>GBP</button>
-                                <button onClick={e=>setcurrency("JPY")}>JPY</button>
-                            </div>
-                    </div> */}
                 </div>
                 <div>Receiver's Details</div>
                 <div>
@@ -172,8 +183,18 @@ setinstitution(res.bankname);
                     <label >Transfer fee(0.25% of Amount)</label>
                     <input type="text" value={transferfee} />
                 </div>
-                <button onClick={submitHandler}>Submit</button>
+            
             </div>
+            <div>
+
+            <div>
+        <Button onClick={submitHandler}>Submit</Button>
+        <ToastContainer />
+      </div>
+   
+
+      
+    </div>
         </div>
     )
 }
