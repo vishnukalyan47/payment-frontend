@@ -25,6 +25,8 @@ function MakeTransaction() {
     const [messagecodes, setmessagecodes] = useState("message codes")
     const [amount, setamount] = useState()
     const [transferfee, settransferfee] = useState()
+    const sendAmount = useRef()
+    const sendFee = useRef();
 
     const EnterCorrectId = () => toast("Enter correct Account Number");
 
@@ -34,14 +36,12 @@ const senderDetails = () =>{
         customerid:accNo
     })
     .then(res=>{
-        console.log(res)
         res = res.data; //just for working only with the data..
         setname(res.accountholdername);
         setclearBal(res.clearbalance);
       (res.overdraftflag === 0) ? setoverdraft(false) : setoverdraft(true);
     })
     .catch(e=> {
-        console.log(e.response.data)
         return EnterCorrectId();
     })
 }
@@ -49,6 +49,7 @@ const senderDetails = () =>{
 
 
 const bankDetails = () =>{
+    if(bic.length!==11) return toast("Enter correct length");
 axios.post("http://localhost:8080/bank/bankdetails",{
 bic:bic
 })
@@ -63,7 +64,6 @@ setinstitution(res.bankname);
 
 
     const checkBlacklist = () =>{
-        console.log("Check Holder name in sanction list ",holdername);
 
         //if present in list then dont show to enter the acc no of reciever...
     }
@@ -81,7 +81,11 @@ setinstitution(res.bankname);
         if(!amount) return toast("Amount should be greater than 0")
        
 
-
+        if(currency==="USD") {sendAmount.current=amount*74.21; sendFee.current=(transferfee*74.21)}
+        else if(currency==="JPY") {sendAmount.current=amount*0.645; sendFee.current=(transferfee*0.645)}
+        else if(currency==="GBP") {sendAmount.current=amount*102; sendFee.current=(transferfee*102)}
+        else if(currency==="EUR") {sendAmount.current=amount*84; sendFee.current=(transferfee*84)}
+        else {sendAmount.current=amount; sendFee.current=(transferfee)}
         const data = {
             "customer":{
                 customerid:accNo
@@ -92,20 +96,24 @@ setinstitution(res.bankname);
             "transfertypes":{
                 transfertypecode: transfertypeVal,
             },
+            "currency":{
+                currencycode:currency,
+            },
             "message":{
             messagecode:messagecodes
             },
-            inramount:amount,
-            transferfees: transferfee,
+            inramount:sendAmount.current,
+            transferfees: sendFee.current,
             recieveraccountholdernumber: holderNo,
             recieveraccountholdername : holdername
         }
         axios.post("http://localhost:8080/transaction/savedata",data)
         .then(res=>{
-            return toast("SUCCESS");
+            if(currency==="currency")  return toast(`Your ${amount} INR  amount sent successfully`);
+            return toast(`Your ${amount} ${currency}  amount sent successfully`);
         })
         .catch(err=>{
-        return toast("FAILED");
+        return toast(`Cannot send more than your limit balance`);
         })
     }
  
@@ -167,6 +175,20 @@ setinstitution(res.bankname);
                                 <button onClick={e=>setmessagecodes("CORT")}>CORT</button>
                                 <button onClick={e=>setmessagecodes("HOLD")}>HOLD</button>
                                 <button onClick={e=>setmessagecodes("INTC")}>INTC</button>
+                                <button onClick={e=>setmessagecodes("PHOB")}>PHOB</button>
+                                <button onClick={e=>setmessagecodes("PHOI")}>PHOI</button>
+                                <button onClick={e=>setmessagecodes("PHON")}>PHON</button>
+                                <button onClick={e=>setmessagecodes("REPA")}>REPA</button>
+                                <button onClick={e=>setmessagecodes("SDVA")}>SDVA</button>
+                            </div>
+                    </div>
+                    <div className="dropdown">
+                        <button className="dropbtn">{currency}</button>
+                            <div className="dropdown-content">
+                            <button onClick={e=>setcurrency("EUR")}>EUR</button>
+                                <button onClick={e=>setcurrency("GBP")}>GBP</button>
+                                <button onClick={e=>setcurrency("JPY")}>JPY</button>
+                                <button onClick={e=>setcurrency("USD")}>USD</button>
                             </div>
                     </div>
                    <div>

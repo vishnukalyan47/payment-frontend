@@ -4,8 +4,8 @@ import '../styles/CustList.css';
 import axios from 'axios';
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
-import SentToTable from './temp/SentToTable';
-import ReceivedFromTable from './temp/ReceivedFromTable';
+import SentToTable from './vishnu/SentToTable';
+import ReceivedFromTable from './vishnu/ReceivedFromTable';
 
 
 
@@ -101,7 +101,7 @@ function CustomerDetails(){
 
     useEffect(()=>{
         axios.get("http://localhost:8080/customers/CustomerGet")
-            .then(res=>setCustomers(res.data))
+            .then(res=>{setCustomers(res.data)})
             .catch(err=>console.log("Some error occurred"))
             
         },[])
